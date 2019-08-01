@@ -8,7 +8,7 @@ import { Timeline, TimelineEvent } from 'react-event-timeline';
 import Dialog from '@material-ui/core/Dialog';
 import FontAwesome from 'react-fontawesome';
 import Typography from '@material-ui/core/Typography';
-import { Badge } from 'reactstrap';
+import Badge from 'reactstrap/lib/Badge';
 import Timeago from 'react-timeago';
 import find from 'lodash/find';
 import BlockView from '../View/BlockView';

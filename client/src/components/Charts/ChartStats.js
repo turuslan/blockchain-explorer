@@ -7,9 +7,11 @@ import compose from 'recompose/compose';
 import { withStyles } from '@material-ui/core/styles';
 import { connect } from 'react-redux';
 import moment from 'moment-timezone';
-import {
-  TabContent, TabPane, Nav, NavItem, NavLink,
-} from 'reactstrap';
+import TabContent from 'reactstrap/lib/TabContent';
+import TabPane from 'reactstrap/lib/TabPane';
+import Nav from 'reactstrap/lib/Nav';
+import NavItem from 'reactstrap/lib/NavItem';
+import NavLink from 'reactstrap/lib/NavLink';
 import classnames from 'classnames';
 import { chartSelectors, chartOperations } from '../../state/redux/charts';
 import TimeChart from './TimeChart';

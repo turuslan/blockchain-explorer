@@ -6,7 +6,10 @@ import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import FontAwesome from 'react-fontawesome';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { Table, Card, CardBody, CardTitle } from 'reactstrap';
+import Table from 'reactstrap/lib/Table';
+import Card from 'reactstrap/lib/Card';
+import CardBody from 'reactstrap/lib/CardBody';
+import CardTitle from 'reactstrap/lib/CardTitle';
 import { blockHashType, onCloseType } from '../types';
 import Modal from '../Styled/Modal';
 

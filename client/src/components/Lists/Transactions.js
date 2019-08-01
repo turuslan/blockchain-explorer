@@ -5,7 +5,7 @@
 import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
-import { Button } from 'reactstrap';
+import Button from 'reactstrap/lib/Button';
 import matchSorter from 'match-sorter';
 import moment from 'moment';
 import ReactTable from '../Styled/Table';
