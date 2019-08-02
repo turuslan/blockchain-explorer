@@ -11,6 +11,9 @@ import Theme from './components/Theme';
 import App from './components/App';
 import { unregister } from './registerServiceWorker';
 
+import ApolloClient from 'apollo-boost';
+import { ApolloProvider } from 'react-apollo';
+
 const mode = localStorage.getItem('theme-mode') || 'light';
 const store = createStore({ theme: { mode } });
 
@@ -31,10 +34,14 @@ store.dispatch(authOperations.network());
 
 unregister();
 
+const client = new ApolloClient({ uri: 'http://localhost:4000' });
+
 ReactDOM.render(
 	<Provider store={store}>
 		<Theme>
-			<App />
+			<ApolloProvider client={client}>
+				<App />
+			</ApolloProvider>
 		</Theme>
 	</Provider>,
 	document.getElementById('root')
