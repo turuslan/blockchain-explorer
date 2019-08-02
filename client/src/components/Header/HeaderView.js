@@ -545,7 +545,7 @@ export class HeaderView extends Component {
 												className={classes.bell}
 												onClick={() => this.handleDrawOpen('notifyDrawer')}
 											/>
-											<Badge badgeContent={notifyCount} color="primary" />
+											<Badge badgeContent={notifyCount} color="primary"> </Badge>
 										</div>
 									}
 									{/*
