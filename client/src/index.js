@@ -6,7 +6,6 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import createStore from './state/store';
-import authOperations from './state/redux/auth/operations';
 import Theme from './components/Theme';
 import App from './components/App';
 import { unregister } from './registerServiceWorker';
@@ -29,8 +28,6 @@ function themeSideEffect(store) {
 		}
 	};
 }
-
-store.dispatch(authOperations.network());
 
 unregister();
 
