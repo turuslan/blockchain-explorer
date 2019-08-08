@@ -15,6 +15,10 @@ import BlockView from '../View/BlockView';
 import blockOpen from '../../static/images/blockOpen.png';
 import { blockListType, notificationsType } from '../types';
 
+import compose from 'recompose/compose';
+import { gql } from 'apollo-boost';
+import { graphql } from 'react-apollo';
+
 const styles = (theme) => {
   const { type } = theme.palette;
   const dark = type === 'dark';
@@ -112,14 +116,6 @@ export class TimelineStream extends Component {
                 <Typography variant="body1">
                   <b className={classes.text}>
                     {' '}
-Channel Name:
-                  </b>
-                  {' '}
-                  {item.channelName}
-                  {' '}
-                  <br />
-                  <b className={classes.text}>
-                    {' '}
 Datahash:
                   </b>
                   {' '}
@@ -169,4 +165,33 @@ TimelineStream.propTypes = {
   notifications: notificationsType.isRequired,
 };
 
-export default withStyles(styles)(TimelineStream);
+export default compose(
+  withStyles(styles),
+  graphql(
+    gql`{
+      list: blockList(count: 3, reverse: true) {
+        items {
+          height
+          hash
+          transactionCount
+          time
+        }
+      }
+    }`,
+    {
+      props({ data: { list } }) {
+        const blocks = list ? list.items : [];
+        return {
+          blockList: blocks.map(({ height, hash }) => ({ height, blockhash: hash })),
+          notifications: blocks.map(({ height, hash, transactionCount, time }) => ({
+            title: `Block ${height}`,
+            blockhash: hash,
+            datahash: hash,
+            txcount: transactionCount,
+            time,
+          })),
+        };
+      },
+    },
+  ),
+)(TimelineStream);

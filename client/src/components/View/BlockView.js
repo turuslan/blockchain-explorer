@@ -13,6 +13,10 @@ import CardTitle from 'reactstrap/lib/CardTitle';
 import { blockHashType, onCloseType } from '../types';
 import Modal from '../Styled/Modal';
 
+import compose from 'recompose/compose';
+import { gql } from 'apollo-boost';
+import { graphql } from 'react-apollo';
+
 const styles = theme => ({
 	cubeIcon: {
 		color: '#ffffff',
@@ -67,10 +71,6 @@ export class BlockView extends Component {
 							<CardBody className={modalClasses.body}>
 								<Table striped hover responsive className="table-striped">
 									<tbody>
-										<tr>
-											<th>Channel name:</th>
-											<td>{blockHash.channelname}</td>
-										</tr>
 										<tr>
 											<th>Block Number</th>
 											<td>{blockHash.blocknum}</td>
@@ -139,4 +139,32 @@ BlockView.propTypes = {
 	onClose: onCloseType.isRequired
 };
 
-export default withStyles(styles)(BlockView);
+export default compose(
+	withStyles(styles),
+	graphql(
+		gql`query ($height: Int!) {
+			block: blockByHeight(height: $height) {
+				blocknum: height
+				datahash: hash
+				blockhash: hash
+				prehash: previousBlockHash
+				txcount: transactionCount
+				createdt: time
+			}
+		}`,
+		{
+			options(props) {
+				return {
+					variables: {
+						height: props.blockHash.height
+					}
+				}
+			},
+			props({ data: { block } }) {
+				return {
+					blockHash: block || {},
+				};
+			},
+		}
+	),
+)(BlockView);
