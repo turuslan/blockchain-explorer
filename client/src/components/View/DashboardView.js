@@ -14,11 +14,12 @@ import PeersHealth from '../Lists/PeersHealth';
 import TimelineStream from '../Lists/TimelineStream';
 import OrgPieChart from '../Charts/OrgPieChart';
 import {
-  blockListType,
   dashStatsType,
-  peerStatusType,
-  transactionByOrgType,
 } from '../types';
+
+import compose from 'recompose/compose';
+import { gql } from 'apollo-boost';
+import { graphql } from 'react-apollo';
 
 const styles = (theme) => {
   const { type } = theme.palette;
@@ -97,88 +98,10 @@ const styles = (theme) => {
 };
 
 export class DashboardView extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      notifications: [],
-      hasDbError: false,
-    };
-  }
-
-  componentWillMount() {
-    const {
-      blockList,
-      dashStats,
-      peerStatus,
-      transactionByOrg,
-      blockActivity,
-    } = this.props;
-    if (
-      blockList === undefined
-      || dashStats === undefined
-      || peerStatus === undefined
-      || blockActivity === undefined
-      || transactionByOrg === undefined
-    ) {
-      this.setState({ hasDbError: true });
-    }
-  }
-
-  componentDidMount() {
-    const { blockActivity } = this.props;
-    this.setNotifications(blockActivity);
-  }
-
-  componentWillReceiveProps() {
-    const { blockActivity } = this.props;
-    this.setNotifications(blockActivity);
-  }
-
-  setNotifications = (blockList) => {
-    const notificationsArr = [];
-    if (blockList !== undefined) {
-      for (let i = 0; i < 3 && blockList && blockList[i]; i += 1) {
-        const block = blockList[i];
-        const notify = {
-          title: `Block ${block.blocknum} `,
-          type: 'block',
-          time: block.createdt,
-          txcount: block.txcount,
-          datahash: block.datahash,
-          blockhash: block.blockhash,
-          channelName: block.channelname,
-        };
-        notificationsArr.push(notify);
-      }
-    }
-    this.setState({ notifications: notificationsArr });
-  };
-
   render() {
     const {
       dashStats,
-      peerStatus,
-      blockActivity,
-      transactionByOrg,
     } = this.props;
-    const { hasDbError, notifications } = this.state;
-    if (hasDbError) {
-      return (
-        <div
-          style={{
-            height: '100vh',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <h1>
-            Please verify your network configuration, database configuration and
-            try again
-          </h1>
-        </div>
-      );
-    }
     const { classes } = this.props;
     return (
       <div className={classes.background}>
@@ -218,7 +141,7 @@ export class DashboardView extends Component {
                   </Row>
                   TRANSACTIONS
                 </div>
-                <div className={`${classes.statistic} ${classes.vdivide}`}>
+                <div className={`${classes.statistic}`}>
                   <Row>
                     <Col sm="4">
                       <Avatar className={`${classes.avatar} ${classes.node}`}>
@@ -233,36 +156,16 @@ export class DashboardView extends Component {
                   </Row>
                   NODES
                 </div>
-                <div className={classes.statistic}>
-                  <Row>
-                    <Col sm="4">
-                      <Avatar
-                        className={`${classes.avatar} ${classes.chaincode}`}
-                      >
-                        <FontAwesome name="handshake-o" />
-                      </Avatar>
-                    </Col>
-                    <Col sm="4">
-                      <h1 className={classes.count}>
-                        {dashStats.chaincodeCount}
-                      </h1>
-                    </Col>
-                  </Row>
-                  CHAINCODES
-                </div>
               </Card>
             </Col>
           </Row>
           <Row>
             <Col sm="6">
               <Card className={classes.section}>
-                <PeersHealth peerStatus={peerStatus} />
+                <PeersHealth />
               </Card>
               <Card className={classes.section}>
-                <TimelineStream
-                  notifications={notifications}
-                  blockList={blockActivity}
-                />
+                <TimelineStream />
               </Card>
             </Col>
             <Col sm="6">
@@ -274,7 +177,7 @@ export class DashboardView extends Component {
 Transactions by Organization
                 </h5>
                 <hr />
-                <OrgPieChart transactionByOrg={transactionByOrg} />
+                <OrgPieChart />
               </Card>
             </Col>
           </Row>
@@ -285,10 +188,27 @@ Transactions by Organization
 }
 
 DashboardView.propTypes = {
-  blockList: blockListType.isRequired,
   dashStats: dashStatsType.isRequired,
-  peerStatus: peerStatusType.isRequired,
-  transactionByOrg: transactionByOrgType.isRequired,
 };
 
-export default withStyles(styles)(DashboardView);
+export default compose(
+  withStyles(styles),
+  graphql(
+    gql`{
+      blockCount
+      transactionCount
+      peerCount
+    }`,
+    {
+      props({ data: { blockCount, transactionCount, peerCount } }) {
+        return {
+          dashStats: {
+            latestBlock: (blockCount || 0).toString(),
+            txCount: (transactionCount || 0).toString(),
+            peerCount: (peerCount || 0).toString(),
+          },
+        };
+      },
+    },
+  ),
+)(DashboardView);
