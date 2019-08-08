@@ -13,6 +13,11 @@ import CardTitle from 'reactstrap/lib/CardTitle';
 import JSONTree from 'react-json-tree';
 import { transactionType } from '../types';
 import Modal from '../Styled/Modal';
+
+import compose from 'recompose/compose';
+import { gql } from 'apollo-boost';
+import { graphql } from 'react-apollo';
+
 /* eslint-disable */
 const readTheme = {
 	base00: '#f3f3f3',
@@ -142,28 +147,8 @@ export class TransactionView extends Component {
 												</td>
 											</tr>
 											<tr>
-												<th>Validation Code:</th>
-												<td>{transaction.validation_code}</td>
-											</tr>
-											<tr>
-												<th>Payload Proposal Hash:</th>
-												<td>{transaction.payload_proposal_hash}</td>
-											</tr>
-											<tr>
 												<th>Creator MSP:</th>
 												<td>{transaction.creator_msp_id}</td>
-											</tr>
-											<tr>
-												<th>Endoser:</th>
-												<td>{transaction.endorser_msp_id}</td>
-											</tr>
-											<tr>
-												<th>Chaincode Name:</th>
-												<td>{transaction.chaincodename}</td>
-											</tr>
-											<tr>
-												<th>Type:</th>
-												<td>{transaction.type}</td>
 											</tr>
 											<tr>
 												<th>Time:</th>
@@ -236,4 +221,37 @@ TransactionView.defaultProps = {
 	transaction: null
 };
 
-export default withStyles(styles)(TransactionView);
+export default compose(
+	withStyles(styles),
+	graphql(
+		gql`query ($hash: String!) {
+			transaction: transactionByHash(hash: $hash) {
+				hash
+				createdBy {
+					id
+				}
+				time
+			}
+		}`,
+		{
+			options(props) {
+				return {
+					variables: {
+						hash: props.transaction,
+					},
+				};
+			},
+			props({ data: { transaction } }) {
+				return {
+					transaction: transaction ? {
+						txhash: transaction.hash,
+						creator_msp_id: transaction.createdBy.id,
+						createdt: transaction.time,
+						read_set: {},
+						write_set: {},
+					} : {},
+				};
+			},
+		},
+	),
+)(TransactionView);

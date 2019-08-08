@@ -8,19 +8,18 @@ import Dialog from '@material-ui/core/Dialog';
 import Button from 'reactstrap/lib/Button';
 import matchSorter from 'match-sorter';
 import find from 'lodash/find';
-import moment from 'moment';
 import { isNull } from 'util';
 import ReactTable from '../Styled/Table';
 import BlockView from '../View/BlockView';
 import TransactionView from '../View/TransactionView';
-import MultiSelect from '../Styled/MultiSelect';
 import DatePicker from '../Styled/DatePicker';
 import {
   blockListType,
-  currentChannelType,
-  getTransactionType,
-  transactionType,
 } from '../types';
+
+import compose from 'recompose/compose';
+import { gql } from 'apollo-boost';
+import { graphql } from 'react-apollo';
 
 const styles = (theme) => {
   const { type } = theme.palette;
@@ -102,83 +101,21 @@ export class Blocks extends Component {
     this.state = {
       dialogOpen: false,
       dialogOpenBlockHash: false,
-      err: false,
-      search: false,
-      to: moment(),
-      orgs: [],
-      options: [],
+      to: null,
       filtered: [],
       sorted: [],
-      from: moment().subtract(1, 'days'),
+      from: null,
       blockHash: {},
     };
   }
 
-  componentDidMount() {
-    const { blockList } = this.props;
-    const selection = {};
-    blockList.forEach((element) => {
-      selection[element.blocknum] = false;
-    });
-    const opts = [];
-    this.props.transactionByOrg.forEach((val) => {
-      opts.push({ label: val.creator_msp_id, value: val.creator_msp_id });
-    });
-    this.setState({ selection, options: opts });
+  timeError() {
+    const { from, to } = this.state;
+    return from !== null && to !== null && from > to;
   }
-
-  componentWillReceiveProps(nextProps) {
-    if (
-      this.state.search
-      && nextProps.currentChannel !== this.props.currentChannel
-    ) {
-      if (this.interval !== undefined) {
-        clearInterval(this.interval);
-      }
-      this.interval = setInterval(() => {
-        this.searchBlockList(nextProps.currentChannel);
-      }, 60000);
-      this.searchBlockList(nextProps.currentChannel);
-    }
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.interVal);
-  }
-
-  handleCustomRender(selected, options) {
-    if (selected.length === 0) {
-      return 'Select Orgs';
-    }
-    if (selected.length === options.length) {
-      return 'All Orgs Selected';
-    }
-
-    return selected.join(',');
-  }
-
-  searchBlockList = async (channel) => {
-    let query = `from=${new Date(this.state.from).toString()}&&to=${new Date(
-      this.state.to,
-    ).toString()}`;
-    for (let i = 0; i < this.state.orgs.length; i++) {
-      query += `&&orgs=${this.state.orgs[i]}`;
-    }
-    let channelhash = this.props.currentChannel;
-    if (channel !== undefined) {
-      channelhash = channel;
-    }
-    await this.props.getBlockListSearch(channelhash, query);
-  };
 
   handleDialogOpen = async (tid) => {
-    const { getTransaction, currentChannel } = this.props;
-    await getTransaction(currentChannel, tid);
-    this.setState({ dialogOpen: true });
-  };
-
-  handleMultiSelect = (value) => {
-    this.setState({ orgs: value });
+    this.setState({ dialogOpen: true, transaction: tid });
   };
 
   handleDialogClose = () => {
@@ -186,33 +123,22 @@ export class Blocks extends Component {
   };
 
   handleSearch = async () => {
-    if (this.interval !== undefined) {
-      clearInterval(this.interval);
-    }
-    this.interval = setInterval(() => {
-      this.searchBlockList();
-    }, 60000);
-    await this.searchBlockList();
-    this.setState({ search: true });
-  };
-
-  handleClearSearch = () => {
-    if (this.interval !== undefined) {
-      clearInterval(this.interval);
-    }
-    this.setState({
-      search: false,
-      to: moment(),
-      orgs: [],
-      err: false,
-      from: moment().subtract(1, 'days'),
+    const { from, to } = this.state;
+    this.props.refetch({
+      timeAfter: from === null ? null : from.toISOString(),
+      timeBefore: to === null ? null : to.toISOString()
     });
   };
 
+  handleClearSearch = () => {
+    this.setState(
+      { to: null, from: null },
+      this.handleSearch,
+    );
+  };
+
   handleDialogOpenBlockHash = (blockHash) => {
-    const blockList = this.state.search
-      ? this.props.blockListSearch
-      : this.props.blockList;
+    const { blockList } = this.props;
     const data = find(blockList, item => item.blockhash === blockHash);
 
     this.setState({
@@ -223,12 +149,6 @@ export class Blocks extends Component {
 
   handleDialogCloseBlockHash = () => {
     this.setState({ dialogOpenBlockHash: false });
-  };
-
-  handleEye = (row, val) => {
-    const { selection } = this.state;
-    const data = Object.assign({}, selection, { [row.index]: !val });
-    this.setState({ selection: data });
   };
 
   reactTableSetup = classes => [
@@ -245,17 +165,6 @@ export class Blocks extends Component {
       width: 150,
     },
     {
-      Header: 'Channel Name',
-      accessor: 'channelname',
-      filterMethod: (filter, rows) => matchSorter(
-        rows,
-        filter.value,
-        { keys: ['channelname'] },
-        { threshold: matchSorter.rankings.SIMPLEMATCH },
-      ),
-      filterAll: true,
-    },
-    {
       Header: 'Number of Tx',
       accessor: 'txcount',
       filterMethod: (filter, rows) => matchSorter(
@@ -266,32 +175,6 @@ export class Blocks extends Component {
       ),
       filterAll: true,
       width: 150,
-    },
-    {
-      Header: 'Data Hash',
-      accessor: 'datahash',
-      className: classes.hash,
-      Cell: row => (
-        <span>
-          <ul className={classes.partialHash} href="#/blocks">
-            <div className={classes.fullHash} id="showTransactionId">
-              {row.value}
-            </div>
-            {' '}
-            {row.value.slice(0, 6)}
-            {' '}
-            {!row.value ? '' : '... '}
-          </ul>
-          {' '}
-        </span>
-      ),
-      filterMethod: (filter, rows) => matchSorter(
-        rows,
-        filter.value,
-        { keys: ['datahash'] },
-        { threshold: matchSorter.rankings.SIMPLEMATCH },
-      ),
-      filterAll: true,
     },
     {
       Header: 'Block Hash',
@@ -403,11 +286,8 @@ export class Blocks extends Component {
   ];
 
   render() {
-    const blockList = this.state.search
-      ? this.props.blockListSearch
-      : this.props.blockList;
-    const { transaction, classes } = this.props;
-    const { blockHash, dialogOpen, dialogOpenBlockHash } = this.state;
+    const { blockList, classes } = this.props;
+    const { transaction, blockHash, dialogOpen, dialogOpenBlockHash } = this.state;
     return (
       <div>
         <div className={`${classes.filter} row searchRow`}>
@@ -421,13 +301,7 @@ From
               showTimeSelect
               timeIntervals={5}
               dateFormat="LLL"
-              onChange={(date) => {
-                if (date > this.state.to) {
-                  this.setState({ err: true, from: date });
-                } else {
-                  this.setState({ from: date, err: false });
-                }
-              }}
+              onChange={from => this.setState({ from })}
             />
           </div>
           <div className={`${classes.filterElement} col-md-3`}>
@@ -440,16 +314,10 @@ To
               showTimeSelect
               timeIntervals={5}
               dateFormat="LLL"
-              onChange={(date) => {
-                if (date > this.state.from) {
-                  this.setState({ to: date, err: false });
-                } else {
-                  this.setState({ err: true, to: date });
-                }
-              }}
+              onChange={to => this.setState({ to })}
             >
               <div className="validator ">
-                {this.state.err && (
+                {this.timeError() && (
                   <span className=" label border-red">
                     {' '}
                     From date should be less than To date
@@ -459,23 +327,10 @@ To
             </DatePicker>
           </div>
           <div className="col-md-2">
-            <MultiSelect
-              hasSelectAll
-              valueRenderer={this.handleCustomRender}
-              shouldToggleOnHover={false}
-              selected={this.state.orgs}
-              options={this.state.options}
-              selectAllLabel="All Orgs"
-              onSelectedChanged={(value) => {
-                this.handleMultiSelect(value);
-              }}
-            />
-          </div>
-          <div className="col-md-2">
             <Button
               className={classes.searchButton}
               color="success"
-              disabled={this.state.err}
+              disabled={this.timeError()}
               onClick={async () => {
                 await this.handleSearch();
               }}
@@ -553,13 +408,38 @@ To
 
 Blocks.propTypes = {
   blockList: blockListType.isRequired,
-  currentChannel: currentChannelType.isRequired,
-  getTransaction: getTransactionType.isRequired,
-  transaction: transactionType,
 };
 
-Blocks.defaultProps = {
-  transaction: null,
-};
-
-export default withStyles(styles)(Blocks);
+export default compose(
+  withStyles(styles),
+	graphql(
+		gql`query ($timeAfter: String, $timeBefore: String) {
+			list: blockList(count: 100, timeAfter: $timeAfter, timeBefore: $timeBefore) {
+        items {
+          height
+          hash
+          previousBlockHash
+          transactionCount
+          transactions {
+            hash
+          }
+        }
+			}
+    }`,
+    {
+      props({ data: { list, refetch } }) {
+        return {
+          blockList: list ? list.items.map(({ height, hash, previousBlockHash, transactionCount, transactions }) => ({
+            height,
+            blocknum: height,
+            txcount: transactionCount,
+            blockhash: hash,
+            prehash: previousBlockHash,
+            txhash: transactions.map(x => x.hash),
+          })) : [],
+          refetch,
+        };
+      },
+    },
+	),
+)(Blocks);

@@ -7,18 +7,13 @@ import { withStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
 import Button from 'reactstrap/lib/Button';
 import matchSorter from 'match-sorter';
-import moment from 'moment';
 import ReactTable from '../Styled/Table';
 import TransactionView from '../View/TransactionView';
 import DatePicker from '../Styled/DatePicker';
-import MultiSelect from '../Styled/MultiSelect';
 
-import {
-  currentChannelType,
-  getTransactionType,
-  transactionListType,
-  transactionType,
-} from '../types';
+import compose from 'recompose/compose';
+import { gql } from 'apollo-boost';
+import { graphql } from 'react-apollo';
 
 const styles = (theme) => {
   const { type } = theme.palette;
@@ -89,82 +84,21 @@ export class Transactions extends Component {
     super(props);
     this.state = {
       dialogOpen: false,
-      search: false,
-      to: moment(),
-      orgs: [],
+      to: null,
       options: [],
       filtered: [],
       sorted: [],
-      err: false,
-      from: moment().subtract(1, 'days'),
+      from: null,
     };
   }
 
-  componentDidMount() {
-    const { transactionList } = this.props;
-    const selection = {};
-    transactionList.forEach((element) => {
-      selection[element.blocknum] = false;
-    });
-    const opts = [];
-    this.props.transactionByOrg.forEach((val) => {
-      opts.push({ label: val.creator_msp_id, value: val.creator_msp_id });
-    });
-    this.setState({ selection, options: opts });
+  timeError() {
+    const { from, to } = this.state;
+    return from !== null && to !== null && from > to;
   }
-
-  componentWillReceiveProps(nextProps) {
-    if (
-      this.state.search
-      && nextProps.currentChannel !== this.props.currentChannel
-    ) {
-      if (this.interval !== undefined) {
-        clearInterval(this.interval);
-      }
-      this.interval = setInterval(() => {
-        this.searchTransactionList(nextProps.currentChannel);
-      }, 60000);
-      this.searchTransactionList(nextProps.currentChannel);
-    }
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.interVal);
-  }
-
-  handleCustomRender(selected, options) {
-    if (selected.length === 0) {
-      return 'Select Orgs';
-    }
-    if (selected.length === options.length) {
-      return 'All Orgs Selected';
-    }
-
-    return selected.join(',');
-  }
-
-  searchTransactionList = async (channel) => {
-    let query = `from=${new Date(this.state.from).toString()}&&to=${new Date(
-      this.state.to,
-    ).toString()}`;
-    for (let i = 0; i < this.state.orgs.length; i++) {
-      query += `&&orgs=${this.state.orgs[i]}`;
-    }
-    let channelhash = this.props.currentChannel;
-    if (channel !== undefined) {
-      channelhash = channel;
-    }
-    await this.props.getTransactionListSearch(channelhash, query);
-  };
 
   handleDialogOpen = async (tid) => {
-    const { currentChannel, getTransaction } = this.props;
-    await getTransaction(currentChannel, tid);
-    this.setState({ dialogOpen: true });
-  };
-
-  handleMultiSelect = (value) => {
-    this.setState({ orgs: value });
+    this.setState({ dialogOpen: true, transaction: tid });
   };
 
   handleDialogClose = () => {
@@ -172,30 +106,18 @@ export class Transactions extends Component {
   };
 
   handleSearch = async () => {
-    if (this.interval !== undefined) {
-      clearInterval(this.interval);
-    }
-    this.interval = setInterval(() => {
-      this.searchTransactionList();
-    }, 60000);
-    await this.searchTransactionList();
-    this.setState({ search: true });
-  };
-
-  handleClearSearch = () => {
-    this.setState({
-      search: false,
-      to: moment(),
-      orgs: [],
-      err: false,
-      from: moment().subtract(1, 'days'),
+    const { from, to } = this.state;
+    this.props.refetch({
+      timeAfter: from === null ? null : from.toISOString(),
+      timeBefore: to === null ? null : to.toISOString()
     });
   };
 
-  handleEye = (row, val) => {
-    const { selection } = this.state;
-    const data = Object.assign({}, selection, { [row.index]: !val });
-    this.setState({ selection: data });
+  handleClearSearch = () => {
+    this.setState(
+      { to: null, from: null },
+      this.handleSearch,
+    );
   };
 
   render() {
@@ -208,17 +130,6 @@ export class Transactions extends Component {
           rows,
           filter.value,
           { keys: ['creator_msp_id'] },
-          { threshold: matchSorter.rankings.SIMPLEMATCH },
-        ),
-        filterAll: true,
-      },
-      {
-        Header: 'Channel Name',
-        accessor: 'channelname',
-        filterMethod: (filter, rows) => matchSorter(
-          rows,
-          filter.value,
-          { keys: ['channelname'] },
           { threshold: matchSorter.rankings.SIMPLEMATCH },
         ),
         filterAll: true,
@@ -253,28 +164,6 @@ export class Transactions extends Component {
         filterAll: true,
       },
       {
-        Header: 'Type',
-        accessor: 'type',
-        filterMethod: (filter, rows) => matchSorter(
-          rows,
-          filter.value,
-          { keys: ['type'] },
-          { threshold: matchSorter.rankings.SIMPLEMATCH },
-        ),
-        filterAll: true,
-      },
-      {
-        Header: 'Chaincode',
-        accessor: 'chaincodename',
-        filterMethod: (filter, rows) => matchSorter(
-          rows,
-          filter.value,
-          { keys: ['chaincodename'] },
-          { threshold: matchSorter.rankings.SIMPLEMATCH },
-        ),
-        filterAll: true,
-      },
-      {
         Header: 'Timestamp',
         accessor: 'createdt',
         filterMethod: (filter, rows) => matchSorter(
@@ -287,11 +176,8 @@ export class Transactions extends Component {
       },
     ];
 
-    const transactionList = this.state.search
-      ? this.props.transactionListSearch
-      : this.props.transactionList;
-    const { transaction } = this.props;
-    const { dialogOpen } = this.state;
+    const { transactionList } = this.props;
+    const { transaction, dialogOpen } = this.state;
     return (
       <div>
         <div className={`${classes.filter} row searchRow`}>
@@ -305,13 +191,7 @@ From
               showTimeSelect
               timeIntervals={5}
               dateFormat="LLL"
-              onChange={(date) => {
-                if (date > this.state.to) {
-                  this.setState({ err: true, from: date });
-                } else {
-                  this.setState({ from: date, err: false });
-                }
-              }}
+              onChange={from => this.setState({ from })}
             />
           </div>
           <div className={`${classes.filterElement} col-md-3`}>
@@ -324,16 +204,10 @@ To
               showTimeSelect
               timeIntervals={5}
               dateFormat="LLL"
-              onChange={(date) => {
-                if (date > this.state.from) {
-                  this.setState({ to: date, err: false });
-                } else {
-                  this.setState({ err: true, to: date });
-                }
-              }}
+              onChange={to => this.setState({ to })}
             >
               <div className="validator ">
-                {this.state.err && (
+                {this.timeError() && (
                   <span className=" label border-red">
                     {' '}
                     From date should be less than To date
@@ -343,23 +217,10 @@ To
             </DatePicker>
           </div>
           <div className="col-md-2">
-            <MultiSelect
-              hasSelectAll
-              valueRenderer={this.handleCustomRender}
-              shouldToggleOnHover={false}
-              selected={this.state.orgs}
-              options={this.state.options}
-              selectAllLabel="All Orgs"
-              onSelectedChanged={(value) => {
-                this.handleMultiSelect(value);
-              }}
-            />
-          </div>
-          <div className="col-md-2">
             <Button
               className={classes.searchButton}
               color="success"
-              disabled={this.state.err}
+              disabled={this.timeError()}
               onClick={async () => {
                 await this.handleSearch();
               }}
@@ -423,15 +284,31 @@ To
   }
 }
 
-Transactions.propTypes = {
-  currentChannel: currentChannelType.isRequired,
-  getTransaction: getTransactionType.isRequired,
-  transaction: transactionType,
-  transactionList: transactionListType.isRequired,
-};
-
-Transactions.defaultProps = {
-  transaction: null,
-};
-
-export default withStyles(styles)(Transactions);
+export default compose(
+  withStyles(styles),
+	graphql(
+		gql`query ($timeAfter: String, $timeBefore: String) {
+			list: transactionList(count: 100, timeAfter: $timeAfter, timeBefore: $timeBefore) {
+        items {
+          hash
+          time
+          createdBy {
+            id
+          }
+        }
+			}
+    }`,
+    {
+      props({ data: { list, refetch } }) {
+        return {
+          transactionList: list ? list.items.map(({ hash, time, createdBy }) => ({
+            txhash: hash,
+            createdt: time,
+            creator_msp_id: createdBy.id,
+          })) : [],
+          refetch,
+        };
+      },
+    },
+	),
+)(Transactions);
