@@ -141,7 +141,7 @@ export class DashboardView extends Component {
                   </Row>
                   TRANSACTIONS
                 </div>
-                <div className={`${classes.statistic}`}>
+                <div className={`${classes.statistic} ${classes.vdivide}`}>
                   <Row>
                     <Col sm="4">
                       <Avatar className={`${classes.avatar} ${classes.node}`}>
@@ -155,6 +155,21 @@ export class DashboardView extends Component {
                     </Col>
                   </Row>
                   NODES
+                </div>
+                <div className={`${classes.statistic}`}>
+                  <Row>
+                    <Col sm="4">
+                      <Avatar className={`${classes.avatar} ${classes.node}`}>
+                        <FontAwesome name="user" />
+                      </Avatar>
+                    </Col>
+                    <Col sm="4">
+                      <h1 className={classes.count}>
+                        {dashStats.accountCount}
+                      </h1>
+                    </Col>
+                  </Row>
+                  ACCOUNTS
                 </div>
               </Card>
             </Col>
@@ -198,14 +213,16 @@ export default compose(
       blockCount
       transactionCount
       peerCount
+      accountCount
     }`,
     {
-      props({ data: { blockCount, transactionCount, peerCount } }) {
+      props({ data: { blockCount, transactionCount, peerCount, accountCount } }) {
         return {
           dashStats: {
             latestBlock: (blockCount || 0).toString(),
             txCount: (transactionCount || 0).toString(),
             peerCount: (peerCount || 0).toString(),
+            accountCount,
           },
         };
       },
