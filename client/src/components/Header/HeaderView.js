@@ -306,6 +306,7 @@ export class HeaderView extends Component {
 			{ to: '/transactions', label: 'TRANSACTIONS' },
 			{ to: '/roles', label: 'ROLES' },
 			{ to: '/domains', label: 'DOMAINS' },
+			{ to: '/accounts', label: 'ACCOUNTS' },
 		];
 
 		return (
