@@ -7,6 +7,7 @@ import { withStyles } from '@material-ui/core/styles';
 import ReactTable from 'react-table';
 import 'react-table/react-table.css';
 import classnames from 'classnames';
+import matchSorter from 'match-sorter';
 
 const styles = (theme) => {
   const { type } = theme.palette;
@@ -76,5 +77,16 @@ const Table = (props) => {
     />
   );
 };
+
+export const filteredColumn = (original) => ({
+  ...original,
+  filterMethod: (filter, rows) => matchSorter(
+    rows,
+    filter.value,
+    { keys: [original.accessor] },
+    { threshold: matchSorter.rankings.SIMPLEMATCH },
+  ),
+  filterAll: true,
+});
 
 export default withStyles(styles)(Table);
