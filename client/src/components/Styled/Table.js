@@ -61,7 +61,10 @@ const styles = (theme) => {
 
 const Table = (props) => {
   const {
-    className = '', list = false, classes, ...rest
+    className = '', list = false, classes,
+    data,
+    defaultPageSize,
+    ...rest
   } = props;
   const clazz = classnames(
     classes.table,
@@ -73,6 +76,11 @@ const Table = (props) => {
     <ReactTable
       className={clazz}
       {...rest}
+      data={data}
+      {...defaultPageSize && {
+        defaultPageSize,
+        showPagination: data.length >= defaultPageSize,
+      }}
       getPaginationProps={() => ({ className: classes.pagination })}
     />
   );
