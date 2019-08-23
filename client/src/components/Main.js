@@ -12,6 +12,7 @@ import TransactionsView from './View/TransactionsView';
 import DashboardView from './View/DashboardView';
 import PageNotFound from './View/PageNotFound';
 import RolesView from './View/RolesView';
+import DomainsView from './View/DomainsView';
 
 import Private from './Route';
 
@@ -58,6 +59,11 @@ export const Main = props => {
 						exact
 						path="/roles"
 						component={RolesView}
+					/>
+					<Private
+						exact
+						path="/domains"
+						component={DomainsView}
 					/>
 					<Route exact component={PageNotFound} />
 				</Switch>
