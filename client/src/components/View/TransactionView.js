@@ -69,13 +69,6 @@ const styles = theme => ({
 	}
 });
 
-const reads = {
-	color: '#2AA233'
-};
-const writes = {
-	color: '#DD8016'
-};
-
 export class TransactionView extends Component {
 	handleClose = () => {
 		const { onClose } = this.props;
@@ -151,26 +144,28 @@ export class TransactionView extends Component {
 												<td>{transaction.creator_msp_id}</td>
 											</tr>
 											<tr>
+												<th>Block:</th>
+												<td>{transaction.blockHeight}</td>
+											</tr>
+											<tr>
 												<th>Time:</th>
 												<td>{transaction.createdt}</td>
 											</tr>
 											<tr>
-												<th style={reads}>Reads:</th>
+												<th>Commands:</th>
 												<td className={classes.JSONtree}>
 													<JSONTree
-														data={transaction.read_set}
-														theme={readTheme}
-														invertTheme={false}
+														data={transaction.commandsJson}
+														theme={writeTheme}
 													/>
 												</td>
 											</tr>
 											<tr>
-												<th style={writes}>Writes:</th>
+												<th>Signatories:</th>
 												<td className={classes.JSONtree}>
 													<JSONTree
-														data={transaction.write_set}
+														data={transaction.signatories}
 														theme={writeTheme}
-														invertTheme={false}
 													/>
 												</td>
 											</tr>
@@ -231,6 +226,9 @@ export default compose(
 					id
 				}
 				time
+        blockHeight
+        signatories
+        commandsJson
 			}
 		}`,
 		{
@@ -249,6 +247,9 @@ export default compose(
 						createdt: transaction.time,
 						read_set: {},
 						write_set: {},
+            blockHeight: transaction.blockHeight,
+            signatories: transaction.signatories,
+            commandsJson: JSON.parse(transaction.commandsJson),
 					} : {},
 				};
 			},
