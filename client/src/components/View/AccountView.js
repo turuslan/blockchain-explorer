@@ -6,10 +6,22 @@ import Card from 'reactstrap/lib/Card';
 import CardBody from 'reactstrap/lib/CardBody';
 import CardTitle from 'reactstrap/lib/CardTitle';
 import Modal from '../Styled/Modal';
+import ReactTable, { filteredColumn } from '../Styled/Table';
 
 import compose from 'recompose/compose';
 import { gql } from 'apollo-boost';
 import { graphql } from 'react-apollo';
+
+const grantedPermissionColumns = [
+  filteredColumn({
+    Header: 'Permission',
+    accessor: 'permission',
+  }),
+  filteredColumn({
+    Header: 'Account',
+    accessor: 'account',
+  }),
+];
 
 export function AccountView({ accountId, onClose, account }) {
   const open = !!accountId;
@@ -42,6 +54,10 @@ export function AccountView({ accountId, onClose, account }) {
                       <td>{account.id}</td>
                     </tr>
                     <tr>
+                      <th>Quorum</th>
+                      <td>{account.quorum}</td>
+                    </tr>
+                    <tr>
                       <th>Roles</th>
                       <td>{account.roles.map(({ name }, i) => <div key={i}>{name}</div>)}</td>
                     </tr>
@@ -52,17 +68,25 @@ export function AccountView({ accountId, onClose, account }) {
                     <tr>
                       <th>Permissions Granted By Account</th>
                       <td>
-                        {account.permissionsGrantedBy.map(({ permission, to }, i) => <div key={i}>
-                          {permission} to {to}
-                        </div>)}
+                        {account.permissionsGrantedBy.length ? <ReactTable
+                          data={account.permissionsGrantedBy}
+                          columns={grantedPermissionColumns}
+                          filterable
+                          minRows={0}
+                          showPagination={false}
+                        /> : '-'}
                       </td>
                     </tr>
                     <tr>
                       <th>Permissions Granted To Account</th>
                       <td>
-                        {account.permissionsGrantedTo.map(({ permission, by }, i) => <div key={i}>
-                          {permission} by {by}
-                        </div>)}
+                        {account.permissionsGrantedTo.length ? <ReactTable
+                          data={account.permissionsGrantedTo}
+                          columns={grantedPermissionColumns}
+                          filterable
+                          minRows={0}
+                          showPagination={false}
+                        /> : '-'}
                       </td>
                     </tr>
                   </tbody>
@@ -83,16 +107,17 @@ export default compose(
     gql`query ($accountId: String!) {
       account: accountById(id: $accountId) {
         id
+        quorum
         roles {
           name
         }
         permissions
         permissionsGrantedBy {
-          to
+          account: to
           permission
         }
         permissionsGrantedTo {
-          by
+          account: by
           permission
         }
       }

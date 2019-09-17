@@ -14,7 +14,7 @@ const columns = [
   }),
   filteredColumn({
     Header: 'Account Quorum',
-    accessor: 'id',
+    accessor: 'quorum',
   }),
   filteredColumn({
     Header: 'Roles',
