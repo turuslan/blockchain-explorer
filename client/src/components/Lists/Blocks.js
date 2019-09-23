@@ -108,6 +108,7 @@ export class Blocks extends Component {
       from: null,
       blockHash: {},
       searchBlockHeight: null,
+      page: 0,
     };
     this.searchBlockHeightRef = null;
   }
@@ -168,6 +169,16 @@ export class Blocks extends Component {
       this.searchBlockHeightRef.setAttribute('value', '');
     }
   }
+
+  onPageSizeChange = (pageSize, page) => {
+    this.onPageChange(page, pageSize);
+  };
+
+  onPageChange = async (page, pageSize) => {
+    pageSize = pageSize || this.props.pageSize;
+    await this.props.refetch({ after: page * pageSize, pageSize });
+    this.setState({ page });
+  };
 
   reactTableSetup = classes => [
     {
@@ -240,8 +251,14 @@ export class Blocks extends Component {
   ];
 
   render() {
-    const { blockList, classes, totalBlockCount } = this.props;
-    const { transaction, blockHash, dialogOpen, dialogOpenBlockHash, searchBlockHeight } = this.state;
+    const {
+      blockList, classes, totalBlockCount,
+      pageSize, loading,
+    } = this.props;
+    const {
+      transaction, blockHash, dialogOpen, dialogOpenBlockHash, searchBlockHeight,
+      page,
+    } = this.state;
     return (
       <div>
         <div className={`${classes.filter} row searchRow`}>
@@ -327,11 +344,18 @@ To
         <ReactTable
           data={blockList}
           columns={this.reactTableSetup(classes)}
-          defaultPageSize={10}
           list
           sortable={false}
           minRows={0}
           style={{ height: '750px' }}
+
+          manual
+          loading={loading}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={this.onPageChange}
+          onPageSizeChange={this.onPageSizeChange}
+          pages={totalBlockCount !== null ? Math.ceil(totalBlockCount / pageSize) : 1}
         />
 
         <Dialog
@@ -369,8 +393,8 @@ Blocks.propTypes = {
 export default compose(
   withStyles(styles),
 	graphql(
-		gql`query ($timeAfter: String, $timeBefore: String) {
-			list: blockList(count: 100, timeAfter: $timeAfter, timeBefore: $timeBefore) {
+		gql`query ($pageSize: Int!, $after: Int, $timeAfter: String, $timeBefore: String) {
+			list: blockList(count: $pageSize, after: $after, timeAfter: $timeAfter, timeBefore: $timeBefore) {
         items {
           height
           hash
@@ -384,7 +408,12 @@ export default compose(
       total: blockCount
     }`,
     {
-      props({ data: { list, total, refetch } }) {
+      options: {
+        variables: {
+          pageSize: 10,
+        },
+      },
+      props({ data: { list, total, loading, refetch, variables: { pageSize } } }) {
         return {
           blockList: list ? list.items.map(({ height, hash, previousBlockHash, transactionCount, transactions }) => ({
             height,
@@ -395,6 +424,8 @@ export default compose(
             txhash: transactions.map(x => x.hash),
           })) : [],
           totalBlockCount: total === undefined ? null : total,
+          pageSize,
+          loading,
           refetch,
         };
       },
