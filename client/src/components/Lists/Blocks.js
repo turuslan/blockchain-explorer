@@ -6,7 +6,6 @@ import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
 import Button from 'reactstrap/lib/Button';
-import matchSorter from 'match-sorter';
 import find from 'lodash/find';
 import { isNull } from 'util';
 import ReactTable from '../Styled/Table';
@@ -102,8 +101,6 @@ export class Blocks extends Component {
       dialogOpen: false,
       dialogOpenBlockHash: false,
       to: null,
-      filtered: [],
-      sorted: [],
       from: null,
       blockHash: {},
     };
@@ -153,31 +150,12 @@ export class Blocks extends Component {
 
   reactTableSetup = classes => [
     {
-      Header: 'Block Number',
+      Header: 'Height',
       accessor: 'blocknum',
-      filterMethod: (filter, rows) => matchSorter(
-        rows,
-        filter.value,
-        { keys: ['blocknum'] },
-        { threshold: matchSorter.rankings.SIMPLEMATCH },
-      ),
-      filterAll: true,
-      width: 150,
+      width: 80,
     },
     {
-      Header: 'Number of Tx',
-      accessor: 'txcount',
-      filterMethod: (filter, rows) => matchSorter(
-        rows,
-        filter.value,
-        { keys: ['txcount'] },
-        { threshold: matchSorter.rankings.SIMPLEMATCH },
-      ),
-      filterAll: true,
-      width: 150,
-    },
-    {
-      Header: 'Block Hash',
+      Header: 'Hash',
       accessor: 'blockhash',
       className: classes.hash,
       Cell: row => (
@@ -199,44 +177,6 @@ export class Blocks extends Component {
           {' '}
         </span>
       ),
-      filterMethod: (filter, rows) => matchSorter(
-        rows,
-        filter.value,
-        { keys: ['blockhash'] },
-        { threshold: matchSorter.rankings.SIMPLEMATCH },
-      ),
-      filterAll: true,
-    },
-    {
-      Header: 'Previous Hash',
-      accessor: 'prehash',
-      className: classes.hash,
-      Cell: row => (
-        <span>
-          <ul
-            className={classes.partialHash}
-            onClick={() => this.handleDialogOpenBlockHash(row.value)}
-            href="#/blocks"
-          >
-            <div className={classes.fullHash} id="showTransactionId">
-              {row.value}
-            </div>
-            {' '}
-            {row.value.slice(0, 6)}
-            {' '}
-            {!row.value ? '' : '... '}
-          </ul>
-          {' '}
-        </span>
-      ),
-      filterMethod: (filter, rows) => matchSorter(
-        rows,
-        filter.value,
-        { keys: ['prehash'] },
-        { threshold: matchSorter.rankings.SIMPLEMATCH },
-      ),
-      filterAll: true,
-      width: 150,
     },
     {
       Header: 'Transactions',
@@ -275,13 +215,6 @@ export class Blocks extends Component {
             : 'null'}
         </ul>
       ),
-      filterMethod: (filter, rows) => matchSorter(
-        rows,
-        filter.value,
-        { keys: ['txhash'] },
-        { threshold: matchSorter.rankings.SIMPLEMATCH },
-      ),
-      filterAll: true,
     },
   ];
 
@@ -349,33 +282,15 @@ To
               Reset
             </Button>
           </div>
-          <div className="col-md-1">
-            <Button
-              className={classes.filterButton}
-              color="secondary"
-              onClick={() => this.setState({ filtered: [], sorted: [] })}
-            >
-              Clear Filter
-            </Button>
-          </div>
         </div>
         <ReactTable
           data={blockList}
           columns={this.reactTableSetup(classes)}
           defaultPageSize={10}
           list
-          filterable
-          sorted={this.state.sorted}
-          onSortedChange={(sorted) => {
-            this.setState({ sorted });
-          }}
-          filtered={this.state.filtered}
-          onFilteredChange={(filtered) => {
-            this.setState({ filtered });
-          }}
+          sortable={false}
           minRows={0}
           style={{ height: '750px' }}
-          showPagination={!(blockList.length < 5)}
         />
 
         <Dialog
