@@ -6,6 +6,10 @@ import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
 import Button from 'reactstrap/lib/Button';
+import Input from 'reactstrap/lib/Input';
+import InputGroup from 'reactstrap/lib/InputGroup';
+import InputGroupAddon from 'reactstrap/lib/InputGroupAddon';
+import FontAwesome from 'react-fontawesome';
 import find from 'lodash/find';
 import { isNull } from 'util';
 import ReactTable from '../Styled/Table';
@@ -103,7 +107,9 @@ export class Blocks extends Component {
       to: null,
       from: null,
       blockHash: {},
+      searchBlockHeight: null,
     };
+    this.searchBlockHeightRef = null;
   }
 
   timeError() {
@@ -144,9 +150,24 @@ export class Blocks extends Component {
     });
   };
 
+  openBlockByHeight(height) {
+    this.setState({
+      dialogOpenBlockHash: true,
+      blockHash: { height },
+    });
+  }
+
   handleDialogCloseBlockHash = () => {
     this.setState({ dialogOpenBlockHash: false });
   };
+
+  searchBlockHeightOnChange(value) {
+    const { totalBlockCount } = this.props;
+    this.setState({ searchBlockHeight: isNaN(value) ? null : Math.max(1, totalBlockCount !== null && value > totalBlockCount ? totalBlockCount : value) | 0 });
+    if (isNaN(value) && this.searchBlockHeightRef) {
+      this.searchBlockHeightRef.setAttribute('value', '');
+    }
+  }
 
   reactTableSetup = classes => [
     {
@@ -219,11 +240,31 @@ export class Blocks extends Component {
   ];
 
   render() {
-    const { blockList, classes } = this.props;
-    const { transaction, blockHash, dialogOpen, dialogOpenBlockHash } = this.state;
+    const { blockList, classes, totalBlockCount } = this.props;
+    const { transaction, blockHash, dialogOpen, dialogOpenBlockHash, searchBlockHeight } = this.state;
     return (
       <div>
         <div className={`${classes.filter} row searchRow`}>
+          <div className="col-md-2">
+            <InputGroup>
+              <Input
+                type="number"
+                placeholder="Height"
+                value={searchBlockHeight === null ? '' : searchBlockHeight}
+                onChange={e => this.searchBlockHeightOnChange(e.target.valueAsNumber)}
+                innerRef={e => this.searchBlockHeightRef = e}
+              />
+              {totalBlockCount !== null && searchBlockHeight !== null && <InputGroupAddon addonType="append">
+                <Button
+                  className={classes.searchButton}
+                  color="success"
+                  onClick={() => this.openBlockByHeight(searchBlockHeight)}
+                >
+                  <FontAwesome name="external-link" />
+                </Button>
+              </InputGroupAddon>}
+            </InputGroup>
+          </div>
           <div className={`${classes.filterElement} col-md-3`}>
             <label className="label">
 From
@@ -340,9 +381,10 @@ export default compose(
           }
         }
 			}
+      total: blockCount
     }`,
     {
-      props({ data: { list, refetch } }) {
+      props({ data: { list, total, refetch } }) {
         return {
           blockList: list ? list.items.map(({ height, hash, previousBlockHash, transactionCount, transactions }) => ({
             height,
@@ -352,6 +394,7 @@ export default compose(
             prehash: previousBlockHash,
             txhash: transactions.map(x => x.hash),
           })) : [],
+          totalBlockCount: total === undefined ? null : total,
           refetch,
         };
       },
