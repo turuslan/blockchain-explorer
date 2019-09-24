@@ -104,18 +104,11 @@ export class Blocks extends Component {
     this.state = {
       dialogOpen: false,
       dialogOpenBlockHash: false,
-      to: null,
-      from: null,
       blockHash: {},
       searchBlockHeight: null,
       page: 0,
     };
     this.searchBlockHeightRef = null;
-  }
-
-  timeError() {
-    const { from, to } = this.state;
-    return from !== null && to !== null && from > to;
   }
 
   handleDialogOpen = async (tid) => {
@@ -124,21 +117,6 @@ export class Blocks extends Component {
 
   handleDialogClose = () => {
     this.setState({ dialogOpen: false });
-  };
-
-  handleSearch = async () => {
-    const { from, to } = this.state;
-    this.props.refetch({
-      timeAfter: from === null ? null : from.toISOString(),
-      timeBefore: to === null ? null : to.toISOString()
-    });
-  };
-
-  handleClearSearch = () => {
-    this.setState(
-      { to: null, from: null },
-      this.handleSearch,
-    );
   };
 
   handleDialogOpenBlockHash = (blockHash) => {
@@ -178,6 +156,11 @@ export class Blocks extends Component {
     pageSize = pageSize || this.props.pageSize;
     await this.props.refetch({ after: page * pageSize, pageSize });
     this.setState({ page });
+  };
+
+  timeRangeOnChange = key => (value) => {
+    this.setState({ page: 0 });
+    this.props.refetch({ after: null, [key]: value });
   };
 
   reactTableSetup = classes => [
@@ -254,6 +237,7 @@ export class Blocks extends Component {
     const {
       blockList, classes, totalBlockCount,
       pageSize, loading,
+      timeAfter, timeBefore,
     } = this.props;
     const {
       transaction, blockHash, dialogOpen, dialogOpenBlockHash, searchBlockHeight,
@@ -262,7 +246,7 @@ export class Blocks extends Component {
     return (
       <div>
         <div className={`${classes.filter} row searchRow`}>
-          <div className="col-md-2">
+          <div className="col-md-4">
             <InputGroup>
               <Input
                 type="number"
@@ -282,63 +266,27 @@ export class Blocks extends Component {
               </InputGroupAddon>}
             </InputGroup>
           </div>
-          <div className={`${classes.filterElement} col-md-3`}>
-            <label className="label">
-From
-            </label>
+          <div className="col-md-4">
             <DatePicker
-              id="from"
-              selected={this.state.from}
+              placeholderText="From"
+              selected={timeAfter}
               showTimeSelect
               timeIntervals={5}
               dateFormat="LLL"
-              onChange={from => this.setState({ from })}
+              onChange={this.timeRangeOnChange('timeAfter')}
+              maxDate={timeBefore}
             />
           </div>
-          <div className={`${classes.filterElement} col-md-3`}>
-            <label className="label">
-To
-            </label>
+          <div className="col-md-4">
             <DatePicker
-              id="to"
-              selected={this.state.to}
+              placeholderText="To"
+              selected={timeBefore}
               showTimeSelect
               timeIntervals={5}
               dateFormat="LLL"
-              onChange={to => this.setState({ to })}
-            >
-              <div className="validator ">
-                {this.timeError() && (
-                  <span className=" label border-red">
-                    {' '}
-                    From date should be less than To date
-                  </span>
-                )}
-              </div>
-            </DatePicker>
-          </div>
-          <div className="col-md-2">
-            <Button
-              className={classes.searchButton}
-              color="success"
-              disabled={this.timeError()}
-              onClick={async () => {
-                await this.handleSearch();
-              }}
-            >
-              Search
-            </Button>
-          </div>
-          <div className="col-md-1">
-            <Button
-              className={classes.filterButton}
-              color="primary"
-              onClick={() => {
-                this.handleClearSearch();
-              }}
-            >
-              Reset
-            </Button>
+              onChange={this.timeRangeOnChange('timeBefore')}
+              minDate={timeAfter}
+            />
           </div>
         </div>
         <ReactTable
@@ -411,9 +359,11 @@ export default compose(
       options: {
         variables: {
           pageSize: 10,
+          timeAfter: null,
+          timeBefore: null,
         },
       },
-      props({ data: { list, total, loading, refetch, variables: { pageSize } } }) {
+      props({ data: { list, total, loading, refetch, variables: { pageSize, timeAfter, timeBefore } } }) {
         return {
           blockList: list ? list.items.map(({ height, hash, previousBlockHash, transactionCount, transactions }) => ({
             height,
@@ -425,6 +375,8 @@ export default compose(
           })) : [],
           totalBlockCount: total === undefined ? null : total,
           pageSize,
+          timeAfter,
+          timeBefore,
           loading,
           refetch,
         };
