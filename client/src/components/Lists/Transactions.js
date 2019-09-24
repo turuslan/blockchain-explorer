@@ -85,6 +85,7 @@ export class Transactions extends Component {
       dialogOpen: false,
       to: null,
       from: null,
+      page: 0,
     };
   }
 
@@ -114,6 +115,16 @@ export class Transactions extends Component {
       { to: null, from: null },
       this.handleSearch,
     );
+  };
+
+  onPageSizeChange = (pageSize, page) => {
+    this.onPageChange(page, pageSize);
+  };
+
+  onPageChange = async (page, pageSize) => {
+    pageSize = pageSize || this.props.pageSize;
+    await this.props.refetch({ after: page * pageSize, pageSize });
+    this.setState({ page });
   };
 
   render() {
@@ -151,8 +162,14 @@ export class Transactions extends Component {
       },
     ];
 
-    const { transactionList } = this.props;
-    const { transaction, dialogOpen } = this.state;
+    const {
+      transactionList,
+      totalTransactionCount, pageSize, loading,
+    } = this.props;
+    const {
+      transaction, dialogOpen,
+      page,
+    } = this.state;
     return (
       <div>
         <div className={`${classes.filter} row searchRow`}>
@@ -218,11 +235,18 @@ To
         <ReactTable
           data={transactionList}
           columns={columnHeaders}
-          defaultPageSize={10}
           list
           sortable={false}
           minRows={0}
           style={{ height: '750px' }}
+
+          manual
+          loading={loading}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={this.onPageChange}
+          onPageSizeChange={this.onPageSizeChange}
+          pages={totalTransactionCount !== null ? Math.ceil(totalTransactionCount / pageSize) : 1}
         />
 
         <Dialog
@@ -244,8 +268,8 @@ To
 export default compose(
   withStyles(styles),
 	graphql(
-		gql`query ($timeAfter: String, $timeBefore: String) {
-			list: transactionList(count: 100, timeAfter: $timeAfter, timeBefore: $timeBefore) {
+		gql`query ($pageSize: Int!, $after: Int, $timeAfter: String, $timeBefore: String) {
+			list: transactionList(count: $pageSize, after: $after, timeAfter: $timeAfter, timeBefore: $timeBefore) {
         items {
           hash
           time
@@ -254,15 +278,24 @@ export default compose(
           }
         }
 			}
+      total: transactionCount
     }`,
     {
-      props({ data: { list, refetch } }) {
+      options: {
+        variables: {
+          pageSize: 10,
+        },
+      },
+      props({ data: { list, total, loading, refetch, variables: { pageSize } } }) {
         return {
           transactionList: list ? list.items.map(({ hash, time, createdBy }) => ({
             txhash: hash,
             createdt: time,
             creator_msp_id: createdBy.id,
           })) : [],
+          totalTransactionCount: total === undefined ? null : total,
+          pageSize,
+          loading,
           refetch,
         };
       },
