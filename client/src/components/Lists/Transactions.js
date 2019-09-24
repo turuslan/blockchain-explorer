@@ -6,7 +6,6 @@ import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
 import Button from 'reactstrap/lib/Button';
-import matchSorter from 'match-sorter';
 import ReactTable from '../Styled/Table';
 import TransactionView from '../View/TransactionView';
 import DatePicker from '../Styled/DatePicker';
@@ -85,9 +84,6 @@ export class Transactions extends Component {
     this.state = {
       dialogOpen: false,
       to: null,
-      options: [],
-      filtered: [],
-      sorted: [],
       from: null,
     };
   }
@@ -126,16 +122,9 @@ export class Transactions extends Component {
       {
         Header: 'Creator',
         accessor: 'creator_msp_id',
-        filterMethod: (filter, rows) => matchSorter(
-          rows,
-          filter.value,
-          { keys: ['creator_msp_id'] },
-          { threshold: matchSorter.rankings.SIMPLEMATCH },
-        ),
-        filterAll: true,
       },
       {
-        Header: 'Tx Id',
+        Header: 'Hash',
         accessor: 'txhash',
         className: classes.hash,
         Cell: row => (
@@ -155,24 +144,10 @@ export class Transactions extends Component {
             </a>
           </span>
         ),
-        filterMethod: (filter, rows) => matchSorter(
-          rows,
-          filter.value,
-          { keys: ['txhash'] },
-          { threshold: matchSorter.rankings.SIMPLEMATCH },
-        ),
-        filterAll: true,
       },
       {
         Header: 'Timestamp',
         accessor: 'createdt',
-        filterMethod: (filter, rows) => matchSorter(
-          rows,
-          filter.value,
-          { keys: ['createdt'] },
-          { threshold: matchSorter.rankings.SIMPLEMATCH },
-        ),
-        filterAll: true,
       },
     ];
 
@@ -239,33 +214,15 @@ To
               Reset
             </Button>
           </div>
-          <div className="col-md-1">
-            <Button
-              className={classes.filterButton}
-              color="secondary"
-              onClick={() => this.setState({ filtered: [], sorted: [] })}
-            >
-              Clear Filter
-            </Button>
-          </div>
         </div>
         <ReactTable
           data={transactionList}
           columns={columnHeaders}
           defaultPageSize={10}
           list
-          filterable
-          sorted={this.state.sorted}
-          onSortedChange={(sorted) => {
-            this.setState({ sorted });
-          }}
-          filtered={this.state.filtered}
-          onFilteredChange={(filtered) => {
-            this.setState({ filtered });
-          }}
+          sortable={false}
           minRows={0}
           style={{ height: '750px' }}
-          showPagination={!(transactionList.length < 5)}
         />
 
         <Dialog
