@@ -6,6 +6,7 @@ import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
 import Button from 'reactstrap/lib/Button';
+import last from 'lodash/last';
 import ReactTable from '../Styled/Table';
 import TransactionView from '../View/TransactionView';
 import DatePicker from '../Styled/DatePicker';
@@ -84,7 +85,15 @@ export class Transactions extends Component {
     this.state = {
       dialogOpen: false,
       page: 0,
+      pages: [null],
     };
+  }
+
+  componentWillReceiveProps({ nextAfter }) {
+    const { pages } = this.state;
+    if (last(pages) < nextAfter) {
+      this.setState({ pages: [...pages, nextAfter] });
+    }
   }
 
   handleDialogOpen = async (tid) => {
@@ -95,20 +104,32 @@ export class Transactions extends Component {
     this.setState({ dialogOpen: false });
   };
 
+  refetch(variables, state) {
+    this.setState(state);
+    this.props.refetch(variables);
+  }
+  
+  pageToAfter = (page, pageSize) => this.wholePaging ? page * pageSize : this.state.pages[page];
+
   onPageSizeChange = (pageSize, page) => {
-    this.onPageChange(page, pageSize);
+    if (this.wholePaging) {
+      this.refetch({ after: this.pageToAfter(page, pageSize), pageSize }, { page });
+    } else {
+      this.refetch({ after: null, pageSize }, { page: 0, pages: [null] });
+    }
   };
 
-  onPageChange = async (page, pageSize) => {
-    pageSize = pageSize || this.props.pageSize;
-    await this.props.refetch({ after: page * pageSize, pageSize });
-    this.setState({ page });
+  onPageChange = (page) => {
+    this.refetch({ after: this.pageToAfter(page, this.props.pageSize) }, { page });
   };
 
   timeRangeOnChange = key => (value) => {
-    this.setState({ page: 0 });
-    this.props.refetch({ after: null, [key]: value });
+    this.refetch({ after: null, [key]: value }, { page: 0, pages: [null] });
   };
+
+  get wholePaging() {
+    return this.props.timeAfter === null && this.props.timeBefore === null;
+  }
 
   render() {
     const { classes } = this.props;
@@ -153,6 +174,7 @@ export class Transactions extends Component {
     const {
       transaction, dialogOpen,
       page,
+      pages,
     } = this.state;
     return (
       <div>
@@ -194,7 +216,7 @@ export class Transactions extends Component {
           pageSize={pageSize}
           onPageChange={this.onPageChange}
           onPageSizeChange={this.onPageSizeChange}
-          pages={totalTransactionCount !== null ? Math.ceil(totalTransactionCount / pageSize) : 1}
+          pages={this.wholePaging ? totalTransactionCount !== null ? Math.ceil(totalTransactionCount / pageSize) : 1 : pages.length}
         />
 
         <Dialog
@@ -225,6 +247,7 @@ export default compose(
             id
           }
         }
+        nextAfter
 			}
       total: transactionCount
     }`,
@@ -243,6 +266,7 @@ export default compose(
             createdt: time,
             creator_msp_id: createdBy.id,
           })) : [],
+          nextAfter: list ? list.nextAfter : null,
           totalTransactionCount: total === undefined ? null : total,
           pageSize,
           timeAfter,
