@@ -10,7 +10,7 @@ import Table from 'reactstrap/lib/Table';
 import Card from 'reactstrap/lib/Card';
 import CardBody from 'reactstrap/lib/CardBody';
 import CardTitle from 'reactstrap/lib/CardTitle';
-import { blockHashType, onCloseType } from '../types';
+import { onCloseType } from '../types';
 import Modal from '../Styled/Modal';
 
 import compose from 'recompose/compose';
@@ -135,7 +135,6 @@ export class BlockView extends Component {
 }
 
 BlockView.propTypes = {
-	blockHash: blockHashType.isRequired,
 	onClose: onCloseType.isRequired
 };
 
@@ -162,7 +161,7 @@ export default compose(
 			},
 			props({ data: { block } }) {
 				return {
-					blockHash: block || {},
+					blockHash: block,
 				};
 			},
 		}
