@@ -5,12 +5,24 @@ import Table from 'reactstrap/lib/Table';
 import Card from 'reactstrap/lib/Card';
 import CardBody from 'reactstrap/lib/CardBody';
 import CardTitle from 'reactstrap/lib/CardTitle';
+import flatMap from 'lodash/flatMap';
 import Modal from '../Styled/Modal';
 import ReactTable, { filteredColumn } from '../Styled/Table';
 
 import compose from 'recompose/compose';
 import { gql } from 'apollo-boost';
 import { graphql } from 'react-apollo';
+
+const rolePermissionColumns = [
+  filteredColumn({
+    Header: 'Permission',
+    accessor: 'permission',
+  }),
+  filteredColumn({
+    Header: 'Role',
+    accessor: 'role',
+  }),
+];
 
 const grantedPermissionColumns = [
   filteredColumn({
@@ -24,6 +36,7 @@ const grantedPermissionColumns = [
 ];
 
 export function AccountView({ accountId, onClose, account }) {
+  const rolePermissions = account ? flatMap(account.roles, role => role.permissions.map(permission => ({ role: role.name, permission }))) : [];
   const open = !!accountId;
   return (
     <Dialog
@@ -63,7 +76,15 @@ export function AccountView({ accountId, onClose, account }) {
                     </tr>
                     <tr>
                       <th>Role Permissions</th>
-                      <td>{account.permissions.map((permission, i) => <div key={i}>{permission}</div>)}</td>
+                      <td>
+                        {rolePermissions.length ? <ReactTable
+                          data={rolePermissions}
+                          columns={rolePermissionColumns}
+                          filterable
+                          minRows={0}
+                          showPagination={false}
+                        /> : '-'}
+                      </td>
                     </tr>
                     <tr>
                       <th>Permissions Granted By Account</th>
@@ -110,8 +131,8 @@ export default compose(
         quorum
         roles {
           name
+          permissions
         }
-        permissions
         permissionsGrantedBy {
           account: to
           permission
