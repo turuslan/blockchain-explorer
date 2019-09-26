@@ -21,9 +21,6 @@ const styles = (theme) => {
       '& .rt-tbody': {
         overflow: 'scroll !important',
       },
-      '& .rt-tr-group .rt-tr': {
-        paddingTop: 30,
-      },
       '& .rt-td': {
         textAlign: 'center',
       },
