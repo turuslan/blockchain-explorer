@@ -25,26 +25,37 @@ const columns = [
   },
 ];
 
-export function AccountsView({ list }) {
-  const [showAccount, setShowAccount] = React.useState(null);
-  return (
-    <View>
-      <ReactTable
-        data={list}
-        columns={columns}
-        defaultPageSize={5}
-        sortable={false}
-        minRows={0}
-        getTrProps={(state, row) => ({
-          onClick: () => setShowAccount(row.original.id),
-        })}
-      />
-      <AccountView
-        accountId={showAccount}
-        onClose={() => setShowAccount(null)}
-      />
-    </View>
-  );
+export class AccountsView extends React.Component {
+  state = {
+    showAccount: null,
+  };
+
+  render() {
+    const {
+      list,
+    } = this.props;
+    const {
+      showAccount,
+    } = this.state;
+    return (
+      <View>
+        <ReactTable
+          data={list}
+          columns={columns}
+          defaultPageSize={5}
+          sortable={false}
+          minRows={0}
+          getTrProps={(state, row) => ({
+            onClick: () => this.setState({ showAccount: row.original.id }),
+          })}
+        />
+        <AccountView
+          accountId={showAccount}
+          onClose={() => this.setState({ showAccount: null })}
+        />
+      </View>
+    );
+  }
 }
 
 export default compose(
