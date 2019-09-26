@@ -4,12 +4,14 @@
 
 import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
+import Dialog from '@material-ui/core/Dialog';
 import FontAwesome from 'react-fontawesome';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import Table from 'reactstrap/lib/Table';
 import Card from 'reactstrap/lib/Card';
 import CardBody from 'reactstrap/lib/CardBody';
 import CardTitle from 'reactstrap/lib/CardTitle';
+import TransactionView from './TransactionView';
 import { onCloseType } from '../types';
 import Modal from '../Styled/Modal';
 
@@ -25,12 +27,17 @@ const styles = theme => ({
 });
 
 export class BlockView extends Component {
+	state = {
+		showTransaction: null,
+	};
+
 	handleClose = () => {
 		const { onClose } = this.props;
 		onClose();
 	};
 
 	render() {
+		const { showTransaction } = this.state;
 		const { blockHash, classes } = this.props;
 		if (!blockHash) {
 			return (
@@ -123,10 +130,30 @@ export class BlockView extends Component {
 												</button>
 											</td>
 										</tr>
+										<tr>
+											<th>Transactions</th>
+											<td>
+												{blockHash.transactions.length ? blockHash.transactions.map(({ hash }, i) =>
+													<div key={i} onClick={() => this.setState({ showTransaction: hash })}>{hash}</div>
+												) : '-'}
+											</td>
+										</tr>
 									</tbody>
 								</Table>
 							</CardBody>
 						</Card>
+						
+						<Dialog
+							open={showTransaction !== null}
+							onClose={() => this.setState({ showTransaction: null })}
+							fullWidth
+							maxWidth="md"
+						>
+							{showTransaction ? <TransactionView
+								transaction={showTransaction}
+								onClose={() => this.setState({ showTransaction: null })}
+							/> : ''}
+						</Dialog>
 					</div>
 				)}
 			</Modal>
@@ -149,6 +176,9 @@ export default compose(
 				prehash: previousBlockHash
 				txcount: transactionCount
 				createdt: time
+				transactions {
+					hash
+				}
 			}
 		}`,
 		{
