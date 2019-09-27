@@ -6,6 +6,7 @@ import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
 import Button from 'reactstrap/lib/Button';
+import Input from 'reactstrap/lib/Input';
 import last from 'lodash/last';
 import ReactTable from '../Styled/Table';
 import TransactionView from '../View/TransactionView';
@@ -86,6 +87,7 @@ export class Transactions extends Component {
       dialogOpen: false,
       page: 0,
       pages: [null],
+      creatorId: null,
     };
   }
 
@@ -127,8 +129,12 @@ export class Transactions extends Component {
     this.refetch({ after: null, [key]: value }, { page: 0, pages: [null] });
   };
 
+  creatorIdOnChange(creatorId) {
+    this.refetch({ after: null, creatorId }, { page: 0, pages: [null], creatorId });
+  }
+
   get wholePaging() {
-    return this.props.timeAfter === null && this.props.timeBefore === null;
+    return this.props.timeAfter === null && this.props.timeBefore === null && this.state.creatorId === null;
   }
 
   render() {
@@ -175,10 +181,18 @@ export class Transactions extends Component {
       transaction, dialogOpen,
       page,
       pages,
+      creatorId,
     } = this.state;
     return (
       <div>
         <div className={`${classes.filter} row searchRow`}>
+          <div className="col-md-3">
+            <Input
+              placeholder="Creator"
+              value={creatorId || ''}
+              onChange={e => this.creatorIdOnChange(e.target.value || null)}
+            />
+          </div>
           <div className="col-md-3">
             <DatePicker
               placeholderText="From"
@@ -238,8 +252,8 @@ export class Transactions extends Component {
 export default compose(
   withStyles(styles),
 	graphql(
-		gql`query ($pageSize: Int!, $after: Int, $timeAfter: String, $timeBefore: String) {
-			list: transactionList(count: $pageSize, after: $after, timeAfter: $timeAfter, timeBefore: $timeBefore) {
+		gql`query ($pageSize: Int!, $after: Int, $timeAfter: String, $timeBefore: String, $creatorId: String) {
+			list: transactionList(count: $pageSize, after: $after, timeAfter: $timeAfter, timeBefore: $timeBefore, creatorId: $creatorId) {
         items {
           hash
           time
@@ -257,6 +271,7 @@ export default compose(
           pageSize: 10,
           timeAfter: null,
           timeBefore: null,
+          creatorId: null,
         },
       },
       props({ data: { list, total, loading, refetch, variables: { pageSize, timeAfter, timeBefore } } }) {
