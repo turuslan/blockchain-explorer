@@ -66,11 +66,6 @@ const styles = (theme) => {
     lastFullHash: {
       display: 'none',
     },
-    filter: {
-      width: '100%',
-      textAlign: 'center',
-      margin: '0px !important',
-    },
     filterButton: {
       opacity: 0.8,
       margin: 'auto',
@@ -267,7 +262,7 @@ export class Blocks extends Component {
     } = this.state;
     return (
       <div>
-        <div className={`${classes.filter} row searchRow`}>
+        <div className="row searchRow">
           <div className="col-md-4">
             <InputGroup>
               <Input

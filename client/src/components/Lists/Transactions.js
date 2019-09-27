@@ -47,11 +47,6 @@ const styles = (theme) => {
       display: 'none',
     },
     lastFullHash: {},
-    filter: {
-      width: '100%',
-      textAlign: 'center',
-      margin: '0px !important',
-    },
     filterButton: {
       opacity: 0.8,
       margin: 'auto',
@@ -185,7 +180,7 @@ export class Transactions extends Component {
     } = this.state;
     return (
       <div>
-        <div className={`${classes.filter} row searchRow`}>
+        <div className="row searchRow">
           <div className="col-md-3">
             <Input
               placeholder="Creator"
