@@ -17,6 +17,7 @@ const columns = [
   {
     Header: 'Quorum',
     accessor: 'quorum',
+    width: 100,
   },
   {
     Header: 'Roles',
