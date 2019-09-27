@@ -21,9 +21,6 @@ const styles = (theme) => {
       '& .rt-tbody': {
         overflow: 'scroll !important',
       },
-      '& .rt-td': {
-        textAlign: 'center',
-      },
       '& .rt-th input': {
         background: dark ? '#7165ad !important' : undefined,
         color: dark ? '#ffffff' : undefined,

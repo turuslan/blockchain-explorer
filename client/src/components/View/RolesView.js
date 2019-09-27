@@ -14,13 +14,9 @@ const columns = [
   filteredColumn({
     Header: 'Permissions',
     accessor: 'permissions',
-    Cell: ({ value }) => <div style={{ textAlign: 'left' }}>
-      {value.length ?
-        value.map((permission, i) => <div key={i}>{permission}</div>)
-      :
-        '(no permissions)'
-      }
-    </div>,
+    Cell: ({ value }) => value.length ? <>
+      {value.map((permission, i) => <div key={i}>{permission}</div>)}
+    </> : '(no permissions)',
   }),
 ];
 

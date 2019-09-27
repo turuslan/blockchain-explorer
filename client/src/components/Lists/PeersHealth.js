@@ -18,9 +18,6 @@ const styles = theme => ({
 		height: 335,
 		overflowY: 'scroll'
 	},
-	center: {
-		textAlign: 'left'
-	}
 });
 
 /* eslint-enable */
@@ -31,7 +28,6 @@ const PeersHealth = ({ peerStatus, classes }) => {
 			Header: 'Peer Name',
 			accessor: 'server_hostname',
 			filterAll: false,
-			className: classes.center
 		} /*
     {
       Header: 'Status',

@@ -21,9 +21,9 @@ const columns = [
   {
     Header: 'Roles',
     accessor: 'roles',
-    Cell: ({ value }) => <div style={{ textAlign: 'left' }}>
+    Cell: ({ value }) => <>
       {value.map(({ name }, i) => <div key={i}>{name}</div>)}
-    </div>,
+    </>,
   },
 ];
 
