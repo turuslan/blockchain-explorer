@@ -1,4 +1,5 @@
 import React from 'react';
+import Input from 'reactstrap/lib/Input';
 import last from 'lodash/last';
 import View from '../Styled/View';
 import ReactTable from '../Styled/Table';
@@ -31,6 +32,7 @@ export class AccountsView extends React.Component {
     showAccount: null,
     page: 0,
     pages: [null],
+    idPart: null,
   };
 
   componentWillReceiveProps({ nextAfter }) {
@@ -59,8 +61,12 @@ export class AccountsView extends React.Component {
     this.refetch({ after: this.pageToAfter(page, this.props.pageSize) }, { page });
   };
 
+  idPartOnChange(idPart) {
+    this.refetch({ after: null, idPart }, { page: 0, pages: [null], idPart });
+  }
+
   get wholePaging() {
-    return true;
+    return this.state.idPart === null;
   }
 
   render() {
@@ -71,9 +77,20 @@ export class AccountsView extends React.Component {
     const {
       showAccount,
       page, pages,
+      idPart,
     } = this.state;
     return (
       <View>
+        <div className="row searchRow">
+          <div className="col-md-6">
+            <Input
+              placeholder="Id part"
+              value={idPart || ''}
+              onChange={e => this.idPartOnChange(e.target.value || null)}
+            />
+          </div>
+        </div>
+
         <ReactTable
           data={list}
           columns={columns}
@@ -102,8 +119,8 @@ export class AccountsView extends React.Component {
 
 export default compose(
   graphql(
-    gql`query ($pageSize: Int!, $after: Int) {
-      list: accountList(count: $pageSize, after: $after) {
+    gql`query ($pageSize: Int!, $after: Int, $idPart: String) {
+      list: accountList(count: $pageSize, after: $after, id: $idPart) {
         items {
           id
           quorum
@@ -119,6 +136,7 @@ export default compose(
       options: {
         variables: {
           pageSize: 5,
+          idPart: null,
         },
       },
       props({ data: { list, total = null, loading, refetch, variables: { pageSize } } }) {
