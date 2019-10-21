@@ -31,7 +31,7 @@ function themeSideEffect(store) {
 
 unregister();
 
-const client = new ApolloClient({ uri: 'http://localhost:4000' });
+const client = new ApolloClient({ uri: '/graphql' });
 
 ReactDOM.render(
 	<Provider store={store}>
