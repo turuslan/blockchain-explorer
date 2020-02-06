@@ -1,4 +1,4 @@
-# Iroha Explorer Backend [![Build Status](https://travis-ci.org/turuslan/iroha-explorer-backend.svg?branch=master)](https://travis-ci.org/turuslan/iroha-explorer-backend)
+# Iroha Integration
 
 Integration of Hyperledger Iroha into Hyperledger Explorer tool
 
